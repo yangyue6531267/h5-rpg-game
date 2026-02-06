@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我把你当师姐 - 墨山道RPG</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css?v=20260206-combat-fix-1">
+</head>
+<body>
+<div id="game-container">
+  <!-- 标题画面 -->
+  <div id="scene-title" class="scene active">
+    <div class="title-bg">
+      <h1 class="title-text">我把你当师姐</h1>
+      <p class="title-subtitle">墨 山 道 · 求 生 录</p>
+      <div class="title-menu">
+        <button class="btn-ink" onclick="game.newGame()">新的修行</button>
+        <button class="btn-ink" onclick="game.loadGame()">继续修行</button>
+        <button class="btn-ink" onclick="game.showSettings()">设置</button>
+      </div>
+      <p class="title-quote">"在这个把命当数字的世界里，只要血条不归零，神仙我也杀给你看。"</p>
+    </div>
+  </div>
+
+  <!-- HUD 状态栏 -->
+  <div id="hud" class="hidden">
+    <div class="hud-left">
+      <div class="hud-name"><span id="hud-player-name">陈道</span> <span id="hud-realm" class="realm-tag">炼气一层</span></div>
+      <div class="hud-bar">
+        <span class="bar-label">血量</span>
+        <div class="bar-track bar-hp"><div id="bar-hp-fill" class="bar-fill" style="width:100%"></div></div>
+        <span id="bar-hp-text" class="bar-text">100/100</span>
+      </div>
+      <div class="hud-bar">
+        <span class="bar-label">灵力</span>
+        <div class="bar-track bar-sp"><div id="bar-sp-fill" class="bar-fill" style="width:100%"></div></div>
+        <span id="bar-sp-text" class="bar-text">50/50</span>
+      </div>
+      <div class="hud-bar">
+        <span class="bar-label">心情</span>
+        <div class="bar-track bar-mood"><div id="bar-mood-fill" class="bar-fill" style="width:70%"></div></div>
+        <span id="bar-mood-text" class="bar-text">70/100</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <span id="hud-currency">💰 0 符钱</span>
+      <span id="hud-chapter">📖 第一章</span>
+      <button class="btn-hud" onclick="game.toggleInventory()">📦 背包</button>
+      <button class="btn-hud" onclick="game.toggleCultivation()">🧘 修炼</button>
+      <button class="btn-hud" onclick="game.saveGame()">💾 存档</button>
+    </div>
+  </div>
+
+  <!-- 剧情场景 -->
+  <div id="scene-story" class="scene">
+    <div id="story-bg" class="story-background"></div>
+    <div id="story-panel" class="story-panel">
+      <div id="story-speaker" class="story-speaker"></div>
+      <div id="story-portrait-wrap" class="story-portrait-wrap hidden">
+        <canvas id="story-portrait-canvas" class="story-portrait-canvas" width="180" height="180"></canvas>
+      </div>
+      <div id="story-text" class="story-text"></div>
+      <div id="story-choices" class="story-choices"></div>
+      <div id="story-continue" class="story-continue hidden">▼ 点击继续</div>
+    </div>
+  </div>
+
+  <!-- 系统弹窗 -->
+  <div id="scene-system" class="scene">
+    <div id="system-popup" class="system-popup">
+      <div class="system-header">
+        <span class="system-icon">⚙️</span>
+        <span id="system-title">系统提示</span>
+      </div>
+      <div id="system-messages" class="system-messages"></div>
+      <button class="btn-system" onclick="game.story.continueFromSystem()">确认</button>
+    </div>
+  </div>
+
+  <!-- 战斗场景 -->
+  <div id="scene-combat" class="scene">
+    <div class="combat-arena">
+      <div id="combat-enemy" class="combat-entity combat-enemy-side">
+        <div id="enemy-name" class="entity-name">敌人</div>
+        <canvas id="combat-enemy-canvas" class="entity-portrait-canvas" width="180" height="180"></canvas>
+        <div class="entity-bars">
+          <div class="bar-track bar-hp"><div id="enemy-hp-fill" class="bar-fill" style="width:100%"></div></div>
+          <span id="enemy-hp-text" class="bar-text-small">100/100</span>
+        </div>
+        <div id="enemy-status" class="entity-status"></div>
+      </div>
+      <div id="combat-log" class="combat-log"></div>
+      <div id="combat-player" class="combat-entity combat-player-side">
+        <div class="entity-name">陈道</div>
+        <canvas id="combat-player-canvas" class="entity-portrait-canvas" width="180" height="180"></canvas>
+        <div class="entity-bars">
+          <div class="bar-track bar-hp"><div id="combat-hp-fill" class="bar-fill" style="width:100%"></div></div>
+          <span id="combat-hp-text" class="bar-text-small">100/100</span>
+          <div class="bar-track bar-sp"><div id="combat-sp-fill" class="bar-fill" style="width:100%"></div></div>
+          <span id="combat-sp-text" class="bar-text-small">50/50</span>
+        </div>
+      </div>
+    </div>
+    <div id="combat-actions" class="combat-actions">
+      <button class="btn-combat" data-action="attack">⚔️ 攻击</button>
+      <button class="btn-combat" data-action="skill">🌀 功法</button>
+      <button class="btn-combat" data-action="trade">🩸 以伤换伤</button>
+      <button class="btn-combat" data-action="item">🧪 物品</button>
+      <button class="btn-combat" data-action="defend">🛡️ 防御</button>
+      <button class="btn-combat" data-action="flee">🏃 逃跑</button>
+    </div>
+    <div id="combat-skill-menu" class="combat-submenu hidden"></div>
+    <div id="combat-item-menu" class="combat-submenu hidden"></div>
+  </div>
+
+  <!-- 修炼场景 -->
+  <div id="scene-cultivation" class="scene">
+    <div class="cultivation-panel">
+      <h2>🧘 修炼</h2>
+      <div id="cultivation-info" class="cultivation-info"></div>
+      <div id="cultivation-actions" class="cultivation-actions"></div>
+      <button class="btn-ink" onclick="game.closeCultivation()">返回</button>
+    </div>
+  </div>
+
+  <!-- 背包场景 -->
+  <div id="scene-inventory" class="scene">
+    <div class="inventory-panel">
+      <h2>📦 背包</h2>
+      <div class="inventory-tabs">
+        <button class="tab-btn active" data-tab="items">物品</button>
+        <button class="tab-btn" data-tab="equipment">装备</button>
+        <button class="tab-btn" data-tab="skills">功法</button>
+        <button class="tab-btn" data-tab="relations">人物</button>
+      </div>
+      <div id="inventory-content" class="inventory-content"></div>
+      <button class="btn-ink" onclick="game.toggleInventory()">关闭</button>
+    </div>
+  </div>
+
+  <!-- 存档/读档面板 -->
+  <div id="scene-save" class="scene">
+    <div class="save-panel">
+      <h2 id="save-panel-title">💾 存档</h2>
+      <div id="save-slots" class="save-slots"></div>
+      <button class="btn-ink" onclick="game.closeSavePanel()">返回</button>
+    </div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div id="scene-settings" class="scene">
+    <div class="settings-panel">
+      <h2>⚙️ 设置</h2>
+      <div class="setting-row">
+        <label>文字速度</label>
+        <input type="range" id="setting-text-speed" min="10" max="100" value="50">
+      </div>
+      <button class="btn-ink" onclick="game.closeSettings()">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- 游戏脚本 -->
+<script src="data/characters.js"></script>
+<script src="data/skills.js"></script>
+<script src="data/items.js"></script>
+<script src="data/monsters.js"></script>
+<script src="data/chapters/ch01.js"></script>
+<script src="data/chapters/ch02.js"></script>
+<script src="data/chapters/ch03.js"></script>
+<script src="data/chapters/ch04.js"></script>
+<script src="data/chapters/ch05.js"></script>
+<script src="js/core.js"></script>
+<script src="js/characterGraphics.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/save.js"></script>
+<script src="js/story.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/cultivation.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/relationship.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
